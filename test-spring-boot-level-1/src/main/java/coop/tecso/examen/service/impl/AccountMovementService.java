@@ -11,6 +11,8 @@ import coop.tecso.examen.common.enums.Currency;
 import coop.tecso.examen.common.enums.MovementType;
 import coop.tecso.examen.common.enums.ResponseType;
 import coop.tecso.examen.dto.AccountMovementDto;
+import coop.tecso.examen.exception.AccountMovementException;
+import coop.tecso.examen.exception.DomainException;
 import coop.tecso.examen.model.Account;
 import coop.tecso.examen.model.AccountMovement;
 import coop.tecso.examen.repository.IAccountMovementRepository;
@@ -28,65 +30,44 @@ public class AccountMovementService implements IAccountMovementService {
 	private IAccountRepository accountDao;
 
 	@Override
-	public ResponseApplication<AccountMovementDto> create(AccountMovementDto dto) {
-
-		AccountMovement model = Mapper.AccountMovementMapper.map(dto);
+	public ResponseApplication<AccountMovementDto> create(AccountMovementDto dto) {		
 
 		ResponseApplication<AccountMovementDto> response = new ResponseApplication<>();
 		response.setResponse(dto);
 
-		Account account = accountDao.findByAccountNumber(dto.getAccountNumber());
-
-		if (account == null) {
-			response.setMessage("La cuenta especificada no existe");
+		try {
+			dto.isValid();
+		} catch (DomainException e) {
 			response.setResponseType(ResponseType.ERROR);
-			return response;
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
 
-		}
-
-		Currency currency = Currency.valueOf(account.getCurrency());
-
-		switch (currency) {
-		case PESO:
-			if (dto.getAmmount().doubleValue() > Double.valueOf(1000) && dto.getMovementType() == MovementType.DEBIT) {
-				response.setMessage("El debito no puede ser superior a 1000 pesos");
-				response.setResponseType(ResponseType.ERROR);
-				return response;
-
-			}
-
-		case DOLAR:
-			if (dto.getAmmount().doubleValue() > Double.valueOf(300) && dto.getMovementType() == MovementType.DEBIT) {
-				response.setMessage("El debito no puede ser superior a 300 dolares");
-				response.setResponseType(ResponseType.ERROR);
-				return response;
-
-			}
-
-		case EURO:
-			if (dto.getAmmount().doubleValue() > Double.valueOf(150) && dto.getMovementType() == MovementType.DEBIT) {
-				response.setMessage("El debito no puede ser superior a 150 euros");
-				response.setResponseType(ResponseType.ERROR);
-				return response;
-
-			}
-
-		}
-
-		Double balance = (dto.getMovementType() == MovementType.DEBIT
-				? account.getBalance().doubleValue() - dto.getAmmount().doubleValue()
-				: account.getBalance().doubleValue() + dto.getAmmount().doubleValue());
-
-		if (balance < 0) {
-			response.setMessage("No hay fondos suficientes para realizar el debito");
-			response.setResponseType(ResponseType.ERROR);
 			return response;
 		}
+		
+		AccountMovement model = Mapper.AccountMovementMapper.map(dto);
 
-		account.setBalance(BigDecimal.valueOf(balance));
+		try {
 
-		accountDao.save(account);
-		dao.save(model);
+			Account account = getAccount(dto.getAccountNumber());
+
+			validateAmmount(account, dto);
+
+			Double balance = (dto.getMovementType() == MovementType.DEBIT
+					? account.getBalance().doubleValue() - dto.getAmmount().doubleValue()
+					: account.getBalance().doubleValue() + dto.getAmmount().doubleValue());
+
+			account.setBalance(BigDecimal.valueOf(balance));
+
+			accountDao.save(account);
+
+			dao.save(model);
+
+		} catch (DomainException e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
 
 		response.setMessage("Creacion Exitosa");
 		response.setResponseType(ResponseType.OK);
@@ -109,6 +90,50 @@ public class AccountMovementService implements IAccountMovementService {
 		response.setResponseType(ResponseType.OK);
 
 		return response;
+	}
+
+	public Account getAccount(String accountNumber) {
+
+		Account entity = accountDao.findByAccountNumber(accountNumber);
+
+		if (entity == null) {
+			throw new AccountMovementException("La cuenta no existe.");
+		}
+
+		return entity;
+
+	}
+
+	public boolean validateAmmount(Account account, AccountMovementDto dto) {
+
+		if (dto.getMovementType() == MovementType.DEBIT) {
+			switch (Currency.valueOf(account.getCurrency())) {
+			case PESO:
+				if (account.getBalance().doubleValue() - dto.getAmmount().doubleValue() < -1000) {
+					throw new AccountMovementException("Ha excedido el valor descubierto, transaccion Rechazada");
+				}
+				break;
+			case DOLAR:
+				if (account.getBalance().doubleValue() - dto.getAmmount().doubleValue() < -300) {
+					throw new AccountMovementException("Ha excedido el valor descubierto, transaccion Rechazada");
+				}
+				break;
+			case EURO:
+				if (account.getBalance().doubleValue() - dto.getAmmount().doubleValue() < -150) {
+					throw new AccountMovementException("Ha excedido el valor descubierto, transaccion Rechazada");
+				}
+				break;
+
+			default:
+				throw new AccountMovementException(
+						"Error validando Monto para el tipo de moneda, transaccion Rechazada");
+
+			}
+
+		}
+
+		return true;
+
 	}
 
 }

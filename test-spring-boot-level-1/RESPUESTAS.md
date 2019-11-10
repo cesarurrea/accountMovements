@@ -16,7 +16,7 @@ Crear Movimiento (La fecha del movimiento debe ser enviada en milisegundos
 curl -X POST -H "Content-Type:application/json" -H "Accept:application/json" -d "{\"accountNumber\":\"010091\",\"movementDate\":\"1573077293027\",\"movementType\":\"DEBIT\",\"description\":\"Compra de Varios\",\"ammount\":\"5\"}" http://localhost:8080/api/accountMovement
 
 Consultar por cuenta en orden desc
-curl -X GET "http://localhost:8080/api/accountMovement/movement/account/list?accountNumber=010091"
+curl -X GET "http://localhost:8080/api/accountMovement/movement/account?accountNumber=010091"
 
 
 #### URL Ejercicio 1

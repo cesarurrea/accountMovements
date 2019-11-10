@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import coop.tecso.examen.common.enums.ResponseType;
 import coop.tecso.examen.dto.AccountHolderDto;
 import coop.tecso.examen.service.IAccountHolderService;
 import coop.tecso.examen.service.ResponseApplication;
@@ -23,31 +24,90 @@ public class AccountHolderController {
 
 	@PostMapping
 	public ResponseApplication<AccountHolderDto> create(@RequestBody AccountHolderDto dto) {
+		ResponseApplication<AccountHolderDto> response = new ResponseApplication<>();
 
-		return service.create(dto);
+		response.setResponse(dto);
+
+		try {
+
+			response = service.create(dto);
+
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 
 	}
 
 	@PutMapping
 	public ResponseApplication<AccountHolderDto> update(@RequestBody AccountHolderDto dto) {
+		ResponseApplication<AccountHolderDto> response = new ResponseApplication<>();
 
-		return service.update(dto);
+		response.setResponse(dto);
+
+		try {
+			response = service.update(dto);
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 
 	}
 
 	@DeleteMapping
 	public ResponseApplication<AccountHolderDto> delete(@RequestParam String rut) {
-		return service.delete(rut);
+		ResponseApplication<AccountHolderDto> response = new ResponseApplication<>();
+
+		try {
+			response = service.delete(rut);
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 	}
 
 	@GetMapping
 	public ResponseApplication<AccountHolderDto> findById(@RequestParam String rut) {
-		return service.findById(rut);
+		ResponseApplication<AccountHolderDto> response = new ResponseApplication<>();
+
+		try {
+			response = service.findById(rut);
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 	}
-	
+
 	@GetMapping("/list")
 	public ResponseApplication<AccountHolderDto> findAll() {
-		return service.findAll();
+		ResponseApplication<AccountHolderDto> response = new ResponseApplication<>();
+
+		try {
+			response = service.findAll();
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 	}
 
 }

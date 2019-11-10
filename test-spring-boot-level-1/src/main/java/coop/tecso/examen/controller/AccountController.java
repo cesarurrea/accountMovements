@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import coop.tecso.examen.common.enums.ResponseType;
 import coop.tecso.examen.dto.AccountDto;
 import coop.tecso.examen.service.IAccountService;
 import coop.tecso.examen.service.ResponseApplication;
@@ -23,18 +24,55 @@ public class AccountController {
 	@PostMapping
 	public ResponseApplication<AccountDto> create(@RequestBody AccountDto dto) {
 
-		return service.create(dto);
+		ResponseApplication<AccountDto> response = new ResponseApplication<>();
+
+		response.setResponse(dto);
+
+		try {
+
+			response = service.create(dto);
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 
 	}
 
 	@DeleteMapping
 	public ResponseApplication<AccountDto> delete(@RequestParam String accountNumber) {
-		return service.delete(accountNumber);
+		ResponseApplication<AccountDto> response = new ResponseApplication<>();
+
+		try {
+			response = service.delete(accountNumber);
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
+
 	}
 
 	@GetMapping("/list")
 	public ResponseApplication<AccountDto> findAll() {
-		return service.findAll();
+		ResponseApplication<AccountDto> response = new ResponseApplication<>();
+
+		try {
+			response = service.findAll();
+		} catch (Exception e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		return response;
 	}
 
 }

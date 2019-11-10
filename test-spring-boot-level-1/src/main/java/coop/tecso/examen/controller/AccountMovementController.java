@@ -26,7 +26,7 @@ public class AccountMovementController {
 
 	}
 
-	@GetMapping("/movement/account/list")
+	@GetMapping("/movement/account")
 	public ResponseApplication<AccountMovementDto> movementsPerAccount(@RequestParam String accountNumber) {
 		return service.movementsPerAccount(accountNumber);
 	}

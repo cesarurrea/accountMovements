@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import coop.tecso.examen.common.enums.ResponseType;
 import coop.tecso.examen.dto.AccountDto;
+import coop.tecso.examen.exception.AccountException;
+import coop.tecso.examen.exception.DomainException;
 import coop.tecso.examen.model.Account;
 import coop.tecso.examen.repository.IAccountMovementRepository;
 import coop.tecso.examen.repository.IAccountRepository;
@@ -29,9 +31,21 @@ public class AccountService implements IAccountService {
 		ResponseApplication<AccountDto> response = new ResponseApplication<>();
 		response.setResponse(dto);
 
-		if (validateExistsAccount(dto.getAccountNumber())) {
-			response.setMessage("Ya existe el numero de Cuenta");
+		try {
+			dto.isValid();
+		} catch (DomainException e) {
 			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
+			return response;
+		}
+
+		try {
+			validatePossibleInsert(dto.getAccountNumber());
+		} catch (DomainException e) {
+			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
 			return response;
 		}
 
@@ -46,28 +60,25 @@ public class AccountService implements IAccountService {
 	}
 
 	@Override
-	public ResponseApplication<AccountDto> delete(String account) {
+	public ResponseApplication<AccountDto> delete(String accountNumber) {
 
 		ResponseApplication<AccountDto> response = new ResponseApplication<>();
 
-		Account entity = findByAccountNumber(account);
+		try {
+			Account entity = getAccount(accountNumber);
 
-		if (entity == null) {
-			response.setMessage("La cuenta especificada para eliminacion no existe");
+			validateDeleteAccountMovements(accountNumber);
+
+			dao.delete(entity);
+
+			response.setResponse(Mapper.AccountMapper.map(entity));
+
+		} catch (DomainException e) {
 			response.setResponseType(ResponseType.ERROR);
+			response.setMessage("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+
 			return response;
 		}
-
-		if (movementsDao.existsAccountMovements(account)) {
-			response.setMessage("Las cuentas solo pueden eliminarse si no tienen movimientos asociados");
-			response.setResponseType(ResponseType.ERROR);
-			return response;
-
-		}
-
-		dao.delete(entity);
-
-		response.setResponse(Mapper.AccountMapper.map(entity));
 
 		response.setMessage("Eliminacion Exitosa");
 		response.setResponseType(ResponseType.OK);
@@ -93,14 +104,38 @@ public class AccountService implements IAccountService {
 
 	}
 
-	public Boolean validateExistsAccount(String accountNumber) {
+	public Account getAccount(String accountNumber) {
 
-		return dao.existsAccount(accountNumber);
+		Account entity = dao.findByAccountNumber(accountNumber);
+
+		if (entity == null) {
+			throw new AccountException("La cuenta no existe.");
+		}
+
+		return entity;
 
 	}
 
-	public Account findByAccountNumber(String accountNumber) {
-		return dao.findByAccountNumber(accountNumber);
+	public boolean validatePossibleInsert(String accountNumber) {
+
+		boolean exist = dao.existsAccount(accountNumber);
+
+		if (exist) {
+			throw new AccountException("Ya existe la cuenta.");
+		}
+
+		return true;
+
+	}
+
+	public boolean validateDeleteAccountMovements(String accountNumber) {
+
+		if (movementsDao.existsAccountMovements(accountNumber)) {
+			throw new AccountException("Las cuentas solo pueden eliminarse si no tienen movimientos asociados");
+		}
+
+		return true;
+
 	}
 
 }

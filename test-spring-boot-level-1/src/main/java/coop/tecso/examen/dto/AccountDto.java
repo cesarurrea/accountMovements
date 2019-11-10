@@ -3,7 +3,10 @@ package coop.tecso.examen.dto;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import coop.tecso.examen.common.enums.Currency;
+import coop.tecso.examen.exception.AccountValidationException;
 
 public class AccountDto implements Serializable {
 
@@ -12,6 +15,17 @@ public class AccountDto implements Serializable {
 	private String accountNumber;
 	private Currency currency;
 	private BigDecimal balance;
+
+	public AccountDto() {
+		super();
+	}
+
+	public AccountDto(String accountNumber, Currency currency, BigDecimal balance) {
+		super();
+		this.accountNumber = accountNumber;
+		this.currency = currency;
+		this.balance = balance;
+	}
 
 	public String getAccountNumber() {
 		return accountNumber;
@@ -38,6 +52,26 @@ public class AccountDto implements Serializable {
 		balance.setScale(2, BigDecimal.ROUND_FLOOR);
 
 		this.balance = balance;
+	}
+
+	@JsonIgnore
+	public boolean isValid() {
+		String attribute = (this.getAccountNumber() == null ? "" : this.getAccountNumber().trim());
+
+		if (attribute.length() == 0) {
+			throw new AccountValidationException("El NUMERO DE CUENTA es obligatorio.");
+		}
+
+		if (this.getCurrency() == null) {
+			throw new AccountValidationException("La MONEDA es obligatoria.");
+		}
+
+		if (this.getBalance() == null) {
+			throw new AccountValidationException("El valor SALDO es obligatorio.");
+		}
+
+		return true;
+
 	}
 
 }
