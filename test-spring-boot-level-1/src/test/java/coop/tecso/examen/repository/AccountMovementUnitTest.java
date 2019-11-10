@@ -19,7 +19,6 @@ import coop.tecso.examen.common.enums.ResponseType;
 import coop.tecso.examen.dto.AccountDto;
 import coop.tecso.examen.dto.AccountMovementDto;
 import coop.tecso.examen.model.Account;
-import coop.tecso.examen.model.AccountMovement;
 import coop.tecso.examen.service.IAccountMovementService;
 import coop.tecso.examen.service.IAccountService;
 import coop.tecso.examen.service.ResponseApplication;
